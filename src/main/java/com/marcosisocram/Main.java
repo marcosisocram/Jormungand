@@ -80,27 +80,6 @@ public class Main {
                 .log();
     }
 
-//    private static HikariDataSource getConnection() {
-//
-//        final String jdbcUrl = Optional.ofNullable(System.getenv("DB_URL")).orElse("jdbc:postgresql://localhost:5432/postgres");
-//        final String username = Optional.ofNullable(System.getenv("DB_USER")).orElse("user");
-//        final String password = Optional.ofNullable(System.getenv("DB_PASSWORD")).orElse("rinha-de-bK");
-//        final String poolsize = Optional.ofNullable(System.getenv("DB_POOLSIZE")).orElse("10");
-//
-//        final HikariConfig config = new HikariConfig();
-//        config.setJdbcUrl(jdbcUrl);
-//        config.setUsername(username);
-//        config.setPassword(password);
-//
-//        config.setMaximumPoolSize(Integer.parseInt(poolsize));
-//
-//        config.addDataSourceProperty("cachePrepStmts", "true");
-//        config.addDataSourceProperty("prepStmtCacheSize", "250");
-//        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-//
-//        return new HikariDataSource(config);
-//    }
-
     private static Filter logging(Logger logger) {
         return new Filter() {
             @Override

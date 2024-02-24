@@ -17,7 +17,7 @@ public class RequestHandler extends BaseHandle implements HttpHandler {
     private final ExtratoHandle extratoHandle;
     private final TransacaoHandle transacaoHandle;
 
-    public RequestHandler(/*HikariDataSource hikariDataSource*/) throws SQLException {
+    public RequestHandler() throws SQLException {
 
         extratoHandle = new ExtratoHandle();
         transacaoHandle = new TransacaoHandle();

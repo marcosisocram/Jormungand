@@ -19,20 +19,13 @@ import java.util.List;
 
 public class ExtratoHandle extends CustonHttpHandler {
 
-//    private final HikariDataSource hikariDataSource;
-    private final Logger logger = LoggerFactory.getLogger(ExtratoHandle.class);
-//    private final Connection connection;
 
-    public ExtratoHandle(/*HikariDataSource hikariDataSource*/) throws SQLException {
-//        this.hikariDataSource = hikariDataSource;
-//        this.connection = DbConnection.getInstance();
-    }
+    private final Logger logger = LoggerFactory.getLogger(ExtratoHandle.class);
 
     @Override
     public void handle(HttpExchange httpExchange, String requestId) throws IOException {
 
-//        try (Connection connection = hikariDataSource.getConnection()) {
-        try /*(Connection connection = DbConnection.getInstance()) */{
+        try {
 
             SaldoResponseDTO saldoResponseDTO = null;
 

@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,15 +19,7 @@ import java.util.regex.Pattern;
 
 public class TransacaoHandle extends CustonHttpHandler {
 
-//    private final HikariDataSource hikariDataSource;
-
     private final Logger logger = LoggerFactory.getLogger(TransacaoHandle.class);
-//    private final Connection connection;
-
-    public TransacaoHandle() throws SQLException {
-//        this.hikariDataSource = hikariDataSource;
-//        this.connection = DbConnection.getInstance();
-    }
 
     @Override
     public void handle(HttpExchange httpExchange, String requestId) throws IOException {
@@ -101,7 +92,7 @@ public class TransacaoHandle extends CustonHttpHandler {
 
         if ("c".equalsIgnoreCase(transacaoRequestDTO.getTipo())) {
 
-            try /*(Connection connection = DbConnection.getInstance()) */{
+            try {
 
                 try (PreparedStatement st = DbConnection.getInstance().prepareCall("{call creditar(?, ?, ?)}")) {
 
@@ -124,8 +115,7 @@ public class TransacaoHandle extends CustonHttpHandler {
 
         } else if ("d".equalsIgnoreCase(transacaoRequestDTO.getTipo())) {
 
-//            try /*(Connection connection = hikariDataSource.getConnection())*/ {
-            try /*(Connection connection = DbConnection.getInstance()) */{
+            try {
 
                 try (PreparedStatement st = DbConnection.getInstance().prepareCall("{call debitar(?, ?, ?)}")) {
 

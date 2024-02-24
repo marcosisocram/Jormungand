@@ -30,7 +30,6 @@ public class DbConnection {
                 }
             }
         }
-//        logger.atInfo().setMessage("Conexao retornada").log();
         return instance.conn;
     }
 }
