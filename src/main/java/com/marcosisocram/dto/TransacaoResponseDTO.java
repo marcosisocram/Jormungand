@@ -28,6 +28,11 @@ public class TransacaoResponseDTO {
         this.saldo = saldo;
     }
 
+
+    public String toJson() {
+        return "{\"saldo\": " + this.saldo + ", \"limite\": " + this.limite + "}";
+    }
+
     @Override
     public String toString() {
         return "TransacaoResponseDTO{" +

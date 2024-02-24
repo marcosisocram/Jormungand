@@ -1,12 +1,11 @@
 package com.marcosisocram.handle;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marcosisocram.db.DbConnection;
 import com.marcosisocram.dto.TransacaoRequestDTO;
 import com.marcosisocram.dto.TransacaoResponseDTO;
 import com.marcosisocram.exception.NaoSeiException;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
-import com.zaxxer.hikari.HikariDataSource;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,18 +16,18 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.regex.Pattern;
 
 public class TransacaoHandle extends CustonHttpHandler {
 
-    private final HikariDataSource hikariDataSource;
-
-    private final ObjectMapper objectMapper;
+//    private final HikariDataSource hikariDataSource;
 
     private final Logger logger = LoggerFactory.getLogger(TransacaoHandle.class);
+//    private final Connection connection;
 
-    public TransacaoHandle(HikariDataSource hikariDataSource, ObjectMapper objectMapper) {
-        this.hikariDataSource = hikariDataSource;
-        this.objectMapper = objectMapper;
+    public TransacaoHandle() throws SQLException {
+//        this.hikariDataSource = hikariDataSource;
+//        this.connection = DbConnection.getInstance();
     }
 
     @Override
@@ -51,25 +50,60 @@ public class TransacaoHandle extends CustonHttpHandler {
 
         final String jsonRequestBody = new String(data);
 
-        final TransacaoRequestDTO transacaoRequestDTO = objectMapper.readValue(jsonRequestBody, TransacaoRequestDTO.class);
+        final var tt = Pattern.compile("\"valor\": ?\"?\\W?([0-9.]+)\"?|\"tipo\": ?\"([cd])\"|\"descricao\": ?\"([\\w\\s]{1,10})\"");
 
-        if ((transacaoRequestDTO.getDescricao() == null
-                || transacaoRequestDTO.getDescricao().isEmpty()
-                || transacaoRequestDTO.getDescricao().length() > 10)
-                || transacaoRequestDTO.getValor() == null
-                || transacaoRequestDTO.getTipo() == null ) {
+        final var tt2 = tt.matcher(jsonRequestBody);
 
+        long valor = 0L;
+        String tipo = "";
+        String descricao = "";
+        try {
+            if (tt2.find()) {
+                String valorStr = tt2.group(1);
+                if (valorStr.indexOf(".") > 0) {
+                    handleResponse(httpExchange, 422);
+                    return;
+                }
+                valor = Long.parseLong(valorStr);
+            }
+        } catch (Throwable throwable) {
             handleResponse(httpExchange, 422);
             return;
         }
+
+        try {
+            if (!tt2.find()) {
+                handleResponse(httpExchange, 422);
+                return;
+            }
+
+            tipo = tt2.group(2);
+        } catch (Throwable throwable) {
+            handleResponse(httpExchange, 422);
+            return;
+        }
+
+        try {
+            if (!tt2.find()) {
+                handleResponse(httpExchange, 422);
+                return;
+            }
+
+            descricao = tt2.group(3);
+        } catch (Throwable throwable) {
+            handleResponse(httpExchange, 422);
+            return;
+        }
+
+        final TransacaoRequestDTO transacaoRequestDTO = new TransacaoRequestDTO(valor, tipo, descricao);
 
         final var transacao = new TransacaoResponseDTO();
 
         if ("c".equalsIgnoreCase(transacaoRequestDTO.getTipo())) {
 
-            try (Connection connection = hikariDataSource.getConnection()) {
+            try /*(Connection connection = DbConnection.getInstance()) */{
 
-                try (PreparedStatement st = connection.prepareCall("{call creditar(?, ?, ?)}")) {
+                try (PreparedStatement st = DbConnection.getInstance().prepareCall("{call creditar(?, ?, ?)}")) {
 
                     st.setInt(1, Integer.parseInt(requestId));
                     st.setInt(2, transacaoRequestDTO.getValor().intValue());
@@ -90,9 +124,10 @@ public class TransacaoHandle extends CustonHttpHandler {
 
         } else if ("d".equalsIgnoreCase(transacaoRequestDTO.getTipo())) {
 
-            try (Connection connection = hikariDataSource.getConnection()) {
+//            try /*(Connection connection = hikariDataSource.getConnection())*/ {
+            try /*(Connection connection = DbConnection.getInstance()) */{
 
-                try (PreparedStatement st = connection.prepareCall("{call debitar(?, ?, ?)}")) {
+                try (PreparedStatement st = DbConnection.getInstance().prepareCall("{call debitar(?, ?, ?)}")) {
 
                     st.setInt(1, Integer.parseInt(requestId));
                     st.setInt(2, transacaoRequestDTO.getValor().intValue());
@@ -125,9 +160,7 @@ public class TransacaoHandle extends CustonHttpHandler {
             }
         }
 
-        final String transacaoResponse = objectMapper.writeValueAsString(transacao);
-
-        handleResponse(transacaoResponse, httpExchange, 200);
+        handleResponse(transacao.toJson(), httpExchange, 200);
 
     }
 }

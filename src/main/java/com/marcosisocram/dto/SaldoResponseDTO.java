@@ -53,6 +53,30 @@ public class SaldoResponseDTO {
         this.saldoUltimasTransacoesDTO = saldoUltimasTransacoesDTO;
     }
 
+    public String toJson() {
+
+        StringBuilder ultimasTransacoes = new StringBuilder();
+        for (int i = 0; i < this.saldoUltimasTransacoesDTO.size(); i++) {
+
+
+            final SaldoUltimaTransacaoDTO saldoUltimaTransacaoDTO = saldoUltimasTransacoesDTO.get(i);
+            ultimasTransacoes.append("{\"valor\": ")
+                    .append(saldoUltimaTransacaoDTO.getValor())
+                .append(", \"tipo\": \"")
+                    .append(saldoUltimaTransacaoDTO.getTipo())
+                .append("\", \"descricao\": \"")
+                    .append(saldoUltimaTransacaoDTO.getDescricao())
+                .append("\", \"realizada_em\": \"")
+                    .append(saldoUltimaTransacaoDTO.getRealizadaEm().toString())
+                .append("\" }");
+            if(i + 1 < this.saldoUltimasTransacoesDTO.size()) {
+                ultimasTransacoes.append(",");
+            }
+        }
+
+        return "{ \"saldo\": { \"limite\": " + this.limite+ ", \"total\": " + this.total + ", \"data_extrato\": \" " + this.dataExtrato.toString() + " \"}, \"ultimas_transacoes\": ["+ ultimasTransacoes +"]}";
+    }
+
     @Override
     public String toString() {
         return "SaldoResponseDTO{" +

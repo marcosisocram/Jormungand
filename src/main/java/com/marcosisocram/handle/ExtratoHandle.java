@@ -1,10 +1,9 @@
 package com.marcosisocram.handle;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marcosisocram.db.DbConnection;
 import com.marcosisocram.dto.SaldoResponseDTO;
 import com.marcosisocram.dto.SaldoUltimaTransacaoDTO;
 import com.sun.net.httpserver.HttpExchange;
-import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,25 +19,24 @@ import java.util.List;
 
 public class ExtratoHandle extends CustonHttpHandler {
 
-    private final HikariDataSource hikariDataSource;
-
-    private final ObjectMapper objectMapper;
-
+//    private final HikariDataSource hikariDataSource;
     private final Logger logger = LoggerFactory.getLogger(ExtratoHandle.class);
+//    private final Connection connection;
 
-    public ExtratoHandle(HikariDataSource hikariDataSource, ObjectMapper objectMapper) {
-        this.hikariDataSource = hikariDataSource;
-        this.objectMapper = objectMapper;
+    public ExtratoHandle(/*HikariDataSource hikariDataSource*/) throws SQLException {
+//        this.hikariDataSource = hikariDataSource;
+//        this.connection = DbConnection.getInstance();
     }
 
     @Override
     public void handle(HttpExchange httpExchange, String requestId) throws IOException {
 
-        try (Connection connection = hikariDataSource.getConnection()) {
+//        try (Connection connection = hikariDataSource.getConnection()) {
+        try /*(Connection connection = DbConnection.getInstance()) */{
 
             SaldoResponseDTO saldoResponseDTO = null;
 
-            try (PreparedStatement st = connection.prepareStatement("select saldo, limite from clientes where id = ?")) {
+            try (PreparedStatement st = DbConnection.getInstance().prepareStatement("select saldo, limite from clientes where id = ?")) {
 
                 st.setInt(1, Integer.parseInt(requestId));
 
@@ -67,7 +65,7 @@ public class ExtratoHandle extends CustonHttpHandler {
 
             final List<SaldoUltimaTransacaoDTO> saldoUltimaTransacaoDTOS = new ArrayList<>();
 
-            try (PreparedStatement st = connection.prepareStatement("select valor, tipo, descricao, realizada_em from transacoes where cliente_id = ? order by realizada_em desc limit 10")) {
+            try (PreparedStatement st = DbConnection.getInstance().prepareStatement("select valor, tipo, descricao, realizada_em from transacoes where cliente_id = ? order by realizada_em desc limit 10")) {
 
                 st.setInt(1, Integer.parseInt(requestId));
 
@@ -80,9 +78,7 @@ public class ExtratoHandle extends CustonHttpHandler {
 
             saldoResponseDTO.setSaldoUltimasTransacoesDTO(saldoUltimaTransacaoDTOS);
 
-            String saldoResponse = objectMapper.writeValueAsString(saldoResponseDTO);
-
-            handleResponse(saldoResponse, httpExchange, 200);
+            handleResponse(saldoResponseDTO.toJson(), httpExchange, 200);
 
         } catch (SQLException e) {
 

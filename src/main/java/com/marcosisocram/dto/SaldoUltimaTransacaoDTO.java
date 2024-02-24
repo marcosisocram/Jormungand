@@ -1,14 +1,12 @@
 package com.marcosisocram.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.time.LocalDateTime;
 
 public class SaldoUltimaTransacaoDTO {
     private Long valor;
     private String tipo;
     private String descricao;
-    @JsonProperty("realizada_em")
+//    @JsonProperty("realizada_em")
     private LocalDateTime realizadaEm;
 
     public SaldoUltimaTransacaoDTO() {

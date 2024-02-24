@@ -6,7 +6,7 @@ COPY pom.xml pom.xml
 COPY src src
 
 #necessario rodar 'mvn natice:compile -Pinstrumented' na maquina e rodar o app com uma boa quantidade de testes se quiser usar o arquivo default.iprof
-COPY target/default.iprof default.iprof
+COPY default.iprof default.iprof
 
 RUN mvn native:compile -Pdocker-optimized
 

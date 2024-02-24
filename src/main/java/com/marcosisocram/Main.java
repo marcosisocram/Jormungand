@@ -1,20 +1,21 @@
 package com.marcosisocram;
 
+import com.marcosisocram.db.DbConnection;
 import com.marcosisocram.handle.RequestHandler;
 import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 public class Main {
@@ -22,7 +23,7 @@ public class Main {
     public static final String REQUEST_ID_KEY = "requestId";
     public static final long MILHAO = 1_000_000L;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, SQLException {
 
         final long time = System.nanoTime();
 
@@ -30,17 +31,28 @@ public class Main {
 
         final HttpServer server = HttpServer.create(new InetSocketAddress(Integer.parseInt(port)), 0);
 
-        final ExecutorService threadPoolExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        final ExecutorService threadPoolExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("vt-rinha").factory());
 
         final Supplier<String> nextRequestId = () -> Long.toString(System.nanoTime());
 
-        final HikariDataSource connection = getConnection();
-
         final Logger logger = LoggerFactory.getLogger(Main.class);
+
+        Runnable runnable = () -> {
+            try {
+                DbConnection.getInstance();
+            } catch (Throwable throwable) {
+                //ferrou
+            }
+        };
+
+        ThreadFactory virtualThreadFactory = Thread.ofVirtual().name("vt-rinha-db").factory();
+        Thread virtualThread = virtualThreadFactory.newThread(runnable);
+        virtualThread.start();
+
 
         final List<Filter> filters = List.of(tracing(nextRequestId), logging(logger));
 
-        server.createContext("/clientes", new RequestHandler(connection)).getFilters().addAll(filters);
+        server.createContext("/clientes", new RequestHandler()).getFilters().addAll(filters);
 
         server.setExecutor(threadPoolExecutor);
         server.start();
@@ -49,7 +61,12 @@ public class Main {
 
             logger.info("Server is shutting down...");
 
-            connection.close();
+            try {
+                DbConnection.getInstance().close();
+                logger.info("Conexao fechada");
+            } catch (SQLException e) {
+                //ignore
+            }
 
             server.stop(5);
             logger.info("Server stopped");
@@ -63,28 +80,26 @@ public class Main {
                 .log();
     }
 
-    private static HikariDataSource getConnection() {
-
-        final String jdbcUrl = Optional.ofNullable(System.getenv("DB_URL")).orElse("jdbc:postgresql://localhost:5432/postgres");
-        final String username = Optional.ofNullable(System.getenv("DB_USER")).orElse("user");
-        final String password = Optional.ofNullable(System.getenv("DB_PASSWORD")).orElse("rinha-de-bK");
-        final String poolsize = Optional.ofNullable(System.getenv("DB_POOLSIZE")).orElse("10");
-
-        final HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(jdbcUrl);
-        config.setUsername(username);
-        config.setPassword(password);
-
-        //TODO separar um dataSource de leitura e outro de escrita
-        config.setMaximumPoolSize(Integer.parseInt(poolsize));
-
-        //TODO testar se tirando essas properties muda alguma coisa
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-
-        return new HikariDataSource(config);
-    }
+//    private static HikariDataSource getConnection() {
+//
+//        final String jdbcUrl = Optional.ofNullable(System.getenv("DB_URL")).orElse("jdbc:postgresql://localhost:5432/postgres");
+//        final String username = Optional.ofNullable(System.getenv("DB_USER")).orElse("user");
+//        final String password = Optional.ofNullable(System.getenv("DB_PASSWORD")).orElse("rinha-de-bK");
+//        final String poolsize = Optional.ofNullable(System.getenv("DB_POOLSIZE")).orElse("10");
+//
+//        final HikariConfig config = new HikariConfig();
+//        config.setJdbcUrl(jdbcUrl);
+//        config.setUsername(username);
+//        config.setPassword(password);
+//
+//        config.setMaximumPoolSize(Integer.parseInt(poolsize));
+//
+//        config.addDataSourceProperty("cachePrepStmts", "true");
+//        config.addDataSourceProperty("prepStmtCacheSize", "250");
+//        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+//
+//        return new HikariDataSource(config);
+//    }
 
     private static Filter logging(Logger logger) {
         return new Filter() {
